@@ -19,13 +19,21 @@ type Member struct {
 	CreatedOn string `json:"createdOn"`
 }
 
+type NewCareRegimen struct {
+	Waterml int `json:"waterml"`
+	Waterhr int `json:"waterhr"`
+}
+
 type NewMember struct {
 	Email    string `json:"email"`
 	Password string `json:"password"`
 }
 
 type NewNurseryAddition struct {
-	Plant string `json:"plant"`
+	PlantID       string `json:"plantId"`
+	CareRegimenID string `json:"careRegimenId"`
+	Nickname      string `json:"nickname"`
+	Location      string `json:"location"`
 }
 
 type NewPlant struct {
@@ -34,6 +42,12 @@ type NewPlant struct {
 	WaterPreference string `json:"waterPreference"`
 	SunPreference   string `json:"sunPreference"`
 	SoilPreference  string `json:"soilPreference"`
+}
+
+type NewWatering struct {
+	PlantBabyID string `json:"plantBabyID"`
+	Amountml    int    `json:"amountml"`
+	WateredOn   string `json:"wateredOn"`
 }
 
 type Plant struct {
@@ -47,11 +61,21 @@ type Plant struct {
 
 type PlantBaby struct {
 	ID          string       `json:"id"`
-	Owner       *Member      `json:"owner"`
 	Plant       *Plant       `json:"plant"`
+	OwnerID     string       `json:"ownerID"`
 	CareRegimen *CareRegimen `json:"careRegimen"`
+	Location    string       `json:"location"`
+	Nickname    string       `json:"nickname"`
+	AddedOn     string       `json:"addedOn"`
 }
 
 type RefreshToken struct {
 	Token string `json:"token"`
+}
+
+type Watering struct {
+	ID          string `json:"id"`
+	WateredOn   string `json:"wateredOn"`
+	Amountml    int    `json:"amountml"`
+	PlantBabyID string `json:"plantBabyID"`
 }

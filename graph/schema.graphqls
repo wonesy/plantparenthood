@@ -1,6 +1,8 @@
 ########################################################
 # Base objects
 ########################################################
+
+# Defines a plant and its principle information
 type Plant {
   id: ID!
   commonName: String!
@@ -8,26 +10,43 @@ type Plant {
   waterPreference: String!
   sunPreference: String!
   soilPreference: String!
+  recommendedWateringSchedule: String!
 }
 
+# Member aka user
 type Member {
   id: ID!
   email: String!
   createdOn: String!
 }
 
+# Defines a specific care regimen that should be adhered to when
+# caring for a particular plant.
 type CareRegimen {
   id: ID!
   waterml: Int!
-  waterhr: Int!
+  wateringCron: String!
 }
 
+# A plant owned by a member
 type PlantBaby {
   id: ID!
-  owner: Member!
   plant: Plant!
+  ownerID: String!
   careRegimen: CareRegimen!
+  location: String!
+  nickname: String!
+  addedOn: String!
 }
+
+# When a plant was last watered
+type Watering {
+  id: ID!
+  wateredOn: String!
+  amountml: Int!
+  plantBabyID: String!
+}
+
 
 ########################################################
 # Input objects
@@ -45,8 +64,22 @@ input NewPlant {
   soilPreference: String!
 }
 
+input NewCareRegimen {
+  waterml: Int!
+  wateringCron: String!
+}
+
 input NewNurseryAddition {
-  plant: String!
+  plantId: String!
+  careRegimenId: String!
+  nickname: String!
+  location: String!
+}
+
+input NewWatering {
+  plantBabyID: String!
+  amountml: Int!
+  wateredOn: String!
 }
 
 input Login {
@@ -63,14 +96,27 @@ input RefreshToken{
 ########################################################
 type Query {
   members: [Member!]!
+  memberById(id: String!): Member!
+
   plants: [Plant!]!
+  plantById(id: String!): Plant!
+
   nursery: [PlantBaby!]!
+  plantFromNursery(id: String!): PlantBaby!
+
+  careRegimens: [CareRegimen!]!
+  careRegimenByID(id: String!): CareRegimen!
+
+  waterings(plantBabyID: String!): [Watering!]!
 }
 
 type Mutation {
-  createMember(input: NewMember!): String!
-  createPlant(input: NewPlant!): String!
+  createMember(input: NewMember!): Member!
+  createPlant(input: NewPlant!): Plant!
+  createCareRegimen(input: NewCareRegimen!): CareRegimen!
   addPlantToNursery(input: NewNurseryAddition!): PlantBaby!
+  createWatering(input: NewWatering): Watering!
+
   login(input: Login!): String!
   refreshToken(input: RefreshToken!): String!
 }

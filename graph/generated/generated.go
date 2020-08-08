@@ -57,8 +57,10 @@ type ComplexityRoot struct {
 
 	Mutation struct {
 		AddPlantToNursery func(childComplexity int, input model.NewNurseryAddition) int
+		CreateCareRegimen func(childComplexity int, input model.NewCareRegimen) int
 		CreateMember      func(childComplexity int, input model.NewMember) int
 		CreatePlant       func(childComplexity int, input model.NewPlant) int
+		CreateWatering    func(childComplexity int, input *model.NewWatering) int
 		Login             func(childComplexity int, input model.Login) int
 		RefreshToken      func(childComplexity int, input model.RefreshToken) int
 	}
@@ -73,30 +75,54 @@ type ComplexityRoot struct {
 	}
 
 	PlantBaby struct {
+		AddedOn     func(childComplexity int) int
 		CareRegimen func(childComplexity int) int
 		ID          func(childComplexity int) int
-		Owner       func(childComplexity int) int
+		Location    func(childComplexity int) int
+		Nickname    func(childComplexity int) int
+		OwnerID     func(childComplexity int) int
 		Plant       func(childComplexity int) int
 	}
 
 	Query struct {
-		Members func(childComplexity int) int
-		Nursery func(childComplexity int) int
-		Plants  func(childComplexity int) int
+		CareRegimenByID  func(childComplexity int, id string) int
+		CareRegimens     func(childComplexity int) int
+		MemberByID       func(childComplexity int, id string) int
+		Members          func(childComplexity int) int
+		Nursery          func(childComplexity int) int
+		PlantByID        func(childComplexity int, id string) int
+		PlantFromNursery func(childComplexity int, id string) int
+		Plants           func(childComplexity int) int
+		Waterings        func(childComplexity int, plantBabyID string) int
+	}
+
+	Watering struct {
+		Amountml    func(childComplexity int) int
+		ID          func(childComplexity int) int
+		PlantBabyID func(childComplexity int) int
+		WateredOn   func(childComplexity int) int
 	}
 }
 
 type MutationResolver interface {
-	CreateMember(ctx context.Context, input model.NewMember) (string, error)
-	CreatePlant(ctx context.Context, input model.NewPlant) (string, error)
+	CreateMember(ctx context.Context, input model.NewMember) (*model.Member, error)
+	CreatePlant(ctx context.Context, input model.NewPlant) (*model.Plant, error)
+	CreateCareRegimen(ctx context.Context, input model.NewCareRegimen) (*model.CareRegimen, error)
 	AddPlantToNursery(ctx context.Context, input model.NewNurseryAddition) (*model.PlantBaby, error)
+	CreateWatering(ctx context.Context, input *model.NewWatering) (*model.Watering, error)
 	Login(ctx context.Context, input model.Login) (string, error)
 	RefreshToken(ctx context.Context, input model.RefreshToken) (string, error)
 }
 type QueryResolver interface {
 	Members(ctx context.Context) ([]*model.Member, error)
+	MemberByID(ctx context.Context, id string) (*model.Member, error)
 	Plants(ctx context.Context) ([]*model.Plant, error)
+	PlantByID(ctx context.Context, id string) (*model.Plant, error)
 	Nursery(ctx context.Context) ([]*model.PlantBaby, error)
+	PlantFromNursery(ctx context.Context, id string) (*model.PlantBaby, error)
+	CareRegimens(ctx context.Context) ([]*model.CareRegimen, error)
+	CareRegimenByID(ctx context.Context, id string) (*model.CareRegimen, error)
+	Waterings(ctx context.Context, plantBabyID string) ([]*model.Watering, error)
 }
 
 type executableSchema struct {
@@ -168,6 +194,18 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 
 		return e.complexity.Mutation.AddPlantToNursery(childComplexity, args["input"].(model.NewNurseryAddition)), true
 
+	case "Mutation.createCareRegimen":
+		if e.complexity.Mutation.CreateCareRegimen == nil {
+			break
+		}
+
+		args, err := ec.field_Mutation_createCareRegimen_args(context.TODO(), rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Mutation.CreateCareRegimen(childComplexity, args["input"].(model.NewCareRegimen)), true
+
 	case "Mutation.createMember":
 		if e.complexity.Mutation.CreateMember == nil {
 			break
@@ -191,6 +229,18 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 		}
 
 		return e.complexity.Mutation.CreatePlant(childComplexity, args["input"].(model.NewPlant)), true
+
+	case "Mutation.createWatering":
+		if e.complexity.Mutation.CreateWatering == nil {
+			break
+		}
+
+		args, err := ec.field_Mutation_createWatering_args(context.TODO(), rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Mutation.CreateWatering(childComplexity, args["input"].(*model.NewWatering)), true
 
 	case "Mutation.login":
 		if e.complexity.Mutation.Login == nil {
@@ -258,6 +308,13 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 
 		return e.complexity.Plant.WaterPreference(childComplexity), true
 
+	case "PlantBaby.addedOn":
+		if e.complexity.PlantBaby.AddedOn == nil {
+			break
+		}
+
+		return e.complexity.PlantBaby.AddedOn(childComplexity), true
+
 	case "PlantBaby.careRegimen":
 		if e.complexity.PlantBaby.CareRegimen == nil {
 			break
@@ -272,12 +329,26 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 
 		return e.complexity.PlantBaby.ID(childComplexity), true
 
-	case "PlantBaby.owner":
-		if e.complexity.PlantBaby.Owner == nil {
+	case "PlantBaby.location":
+		if e.complexity.PlantBaby.Location == nil {
 			break
 		}
 
-		return e.complexity.PlantBaby.Owner(childComplexity), true
+		return e.complexity.PlantBaby.Location(childComplexity), true
+
+	case "PlantBaby.nickname":
+		if e.complexity.PlantBaby.Nickname == nil {
+			break
+		}
+
+		return e.complexity.PlantBaby.Nickname(childComplexity), true
+
+	case "PlantBaby.ownerID":
+		if e.complexity.PlantBaby.OwnerID == nil {
+			break
+		}
+
+		return e.complexity.PlantBaby.OwnerID(childComplexity), true
 
 	case "PlantBaby.plant":
 		if e.complexity.PlantBaby.Plant == nil {
@@ -285,6 +356,37 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 		}
 
 		return e.complexity.PlantBaby.Plant(childComplexity), true
+
+	case "Query.careRegimenByID":
+		if e.complexity.Query.CareRegimenByID == nil {
+			break
+		}
+
+		args, err := ec.field_Query_careRegimenByID_args(context.TODO(), rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Query.CareRegimenByID(childComplexity, args["id"].(string)), true
+
+	case "Query.careRegimens":
+		if e.complexity.Query.CareRegimens == nil {
+			break
+		}
+
+		return e.complexity.Query.CareRegimens(childComplexity), true
+
+	case "Query.memberById":
+		if e.complexity.Query.MemberByID == nil {
+			break
+		}
+
+		args, err := ec.field_Query_memberById_args(context.TODO(), rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Query.MemberByID(childComplexity, args["id"].(string)), true
 
 	case "Query.members":
 		if e.complexity.Query.Members == nil {
@@ -300,12 +402,76 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 
 		return e.complexity.Query.Nursery(childComplexity), true
 
+	case "Query.plantById":
+		if e.complexity.Query.PlantByID == nil {
+			break
+		}
+
+		args, err := ec.field_Query_plantById_args(context.TODO(), rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Query.PlantByID(childComplexity, args["id"].(string)), true
+
+	case "Query.plantFromNursery":
+		if e.complexity.Query.PlantFromNursery == nil {
+			break
+		}
+
+		args, err := ec.field_Query_plantFromNursery_args(context.TODO(), rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Query.PlantFromNursery(childComplexity, args["id"].(string)), true
+
 	case "Query.plants":
 		if e.complexity.Query.Plants == nil {
 			break
 		}
 
 		return e.complexity.Query.Plants(childComplexity), true
+
+	case "Query.waterings":
+		if e.complexity.Query.Waterings == nil {
+			break
+		}
+
+		args, err := ec.field_Query_waterings_args(context.TODO(), rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Query.Waterings(childComplexity, args["plantBabyID"].(string)), true
+
+	case "Watering.amountml":
+		if e.complexity.Watering.Amountml == nil {
+			break
+		}
+
+		return e.complexity.Watering.Amountml(childComplexity), true
+
+	case "Watering.id":
+		if e.complexity.Watering.ID == nil {
+			break
+		}
+
+		return e.complexity.Watering.ID(childComplexity), true
+
+	case "Watering.plantBabyID":
+		if e.complexity.Watering.PlantBabyID == nil {
+			break
+		}
+
+		return e.complexity.Watering.PlantBabyID(childComplexity), true
+
+	case "Watering.wateredOn":
+		if e.complexity.Watering.WateredOn == nil {
+			break
+		}
+
+		return e.complexity.Watering.WateredOn(childComplexity), true
 
 	}
 	return 0, false
@@ -374,6 +540,8 @@ var sources = []*ast.Source{
 	&ast.Source{Name: "graph/schema.graphqls", Input: `########################################################
 # Base objects
 ########################################################
+
+# Defines a plant and its principle information
 type Plant {
   id: ID!
   commonName: String!
@@ -383,24 +551,40 @@ type Plant {
   soilPreference: String!
 }
 
+# Member aka user
 type Member {
   id: ID!
   email: String!
   createdOn: String!
 }
 
+# Defines a specific care regimen that should be adhered to when
+# caring for a particular plant.
 type CareRegimen {
   id: ID!
   waterml: Int!
   waterhr: Int!
 }
 
+# A plant owned by a member
 type PlantBaby {
   id: ID!
-  owner: Member!
   plant: Plant!
+  ownerID: String!
   careRegimen: CareRegimen!
+  location: String!
+  nickname: String!
+  addedOn: String!
 }
+
+# When a plant was last watered
+type Watering {
+  id: ID!
+  wateredOn: String!
+  amountml: Int!
+  plantBabyID: String!
+}
+
 
 ########################################################
 # Input objects
@@ -418,8 +602,22 @@ input NewPlant {
   soilPreference: String!
 }
 
+input NewCareRegimen {
+  waterml: Int!
+  waterhr: Int!
+}
+
 input NewNurseryAddition {
-  plant: String!
+  plantId: String!
+  careRegimenId: String!
+  nickname: String!
+  location: String!
+}
+
+input NewWatering {
+  plantBabyID: String!
+  amountml: Int!
+  wateredOn: String!
 }
 
 input Login {
@@ -436,14 +634,27 @@ input RefreshToken{
 ########################################################
 type Query {
   members: [Member!]!
+  memberById(id: String!): Member!
+
   plants: [Plant!]!
+  plantById(id: String!): Plant!
+
   nursery: [PlantBaby!]!
+  plantFromNursery(id: String!): PlantBaby!
+
+  careRegimens: [CareRegimen!]!
+  careRegimenByID(id: String!): CareRegimen!
+
+  waterings(plantBabyID: String!): [Watering!]!
 }
 
 type Mutation {
-  createMember(input: NewMember!): String!
-  createPlant(input: NewPlant!): String!
+  createMember(input: NewMember!): Member!
+  createPlant(input: NewPlant!): Plant!
+  createCareRegimen(input: NewCareRegimen!): CareRegimen!
   addPlantToNursery(input: NewNurseryAddition!): PlantBaby!
+  createWatering(input: NewWatering): Watering!
+
   login(input: Login!): String!
   refreshToken(input: RefreshToken!): String!
 }`, BuiltIn: false},
@@ -460,6 +671,20 @@ func (ec *executionContext) field_Mutation_addPlantToNursery_args(ctx context.Co
 	var arg0 model.NewNurseryAddition
 	if tmp, ok := rawArgs["input"]; ok {
 		arg0, err = ec.unmarshalNNewNurseryAddition2githubᚗcomᚋwonesyᚋplantparenthoodᚋgraphᚋmodelᚐNewNurseryAddition(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["input"] = arg0
+	return args, nil
+}
+
+func (ec *executionContext) field_Mutation_createCareRegimen_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
+	var err error
+	args := map[string]interface{}{}
+	var arg0 model.NewCareRegimen
+	if tmp, ok := rawArgs["input"]; ok {
+		arg0, err = ec.unmarshalNNewCareRegimen2githubᚗcomᚋwonesyᚋplantparenthoodᚋgraphᚋmodelᚐNewCareRegimen(ctx, tmp)
 		if err != nil {
 			return nil, err
 		}
@@ -488,6 +713,20 @@ func (ec *executionContext) field_Mutation_createPlant_args(ctx context.Context,
 	var arg0 model.NewPlant
 	if tmp, ok := rawArgs["input"]; ok {
 		arg0, err = ec.unmarshalNNewPlant2githubᚗcomᚋwonesyᚋplantparenthoodᚋgraphᚋmodelᚐNewPlant(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["input"] = arg0
+	return args, nil
+}
+
+func (ec *executionContext) field_Mutation_createWatering_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
+	var err error
+	args := map[string]interface{}{}
+	var arg0 *model.NewWatering
+	if tmp, ok := rawArgs["input"]; ok {
+		arg0, err = ec.unmarshalONewWatering2ᚖgithubᚗcomᚋwonesyᚋplantparenthoodᚋgraphᚋmodelᚐNewWatering(ctx, tmp)
 		if err != nil {
 			return nil, err
 		}
@@ -535,6 +774,76 @@ func (ec *executionContext) field_Query___type_args(ctx context.Context, rawArgs
 		}
 	}
 	args["name"] = arg0
+	return args, nil
+}
+
+func (ec *executionContext) field_Query_careRegimenByID_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
+	var err error
+	args := map[string]interface{}{}
+	var arg0 string
+	if tmp, ok := rawArgs["id"]; ok {
+		arg0, err = ec.unmarshalNString2string(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["id"] = arg0
+	return args, nil
+}
+
+func (ec *executionContext) field_Query_memberById_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
+	var err error
+	args := map[string]interface{}{}
+	var arg0 string
+	if tmp, ok := rawArgs["id"]; ok {
+		arg0, err = ec.unmarshalNString2string(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["id"] = arg0
+	return args, nil
+}
+
+func (ec *executionContext) field_Query_plantById_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
+	var err error
+	args := map[string]interface{}{}
+	var arg0 string
+	if tmp, ok := rawArgs["id"]; ok {
+		arg0, err = ec.unmarshalNString2string(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["id"] = arg0
+	return args, nil
+}
+
+func (ec *executionContext) field_Query_plantFromNursery_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
+	var err error
+	args := map[string]interface{}{}
+	var arg0 string
+	if tmp, ok := rawArgs["id"]; ok {
+		arg0, err = ec.unmarshalNString2string(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["id"] = arg0
+	return args, nil
+}
+
+func (ec *executionContext) field_Query_waterings_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
+	var err error
+	args := map[string]interface{}{}
+	var arg0 string
+	if tmp, ok := rawArgs["plantBabyID"]; ok {
+		arg0, err = ec.unmarshalNString2string(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["plantBabyID"] = arg0
 	return args, nil
 }
 
@@ -814,9 +1123,9 @@ func (ec *executionContext) _Mutation_createMember(ctx context.Context, field gr
 		}
 		return graphql.Null
 	}
-	res := resTmp.(string)
+	res := resTmp.(*model.Member)
 	fc.Result = res
-	return ec.marshalNString2string(ctx, field.Selections, res)
+	return ec.marshalNMember2ᚖgithubᚗcomᚋwonesyᚋplantparenthoodᚋgraphᚋmodelᚐMember(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) _Mutation_createPlant(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
@@ -855,9 +1164,50 @@ func (ec *executionContext) _Mutation_createPlant(ctx context.Context, field gra
 		}
 		return graphql.Null
 	}
-	res := resTmp.(string)
+	res := resTmp.(*model.Plant)
 	fc.Result = res
-	return ec.marshalNString2string(ctx, field.Selections, res)
+	return ec.marshalNPlant2ᚖgithubᚗcomᚋwonesyᚋplantparenthoodᚋgraphᚋmodelᚐPlant(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _Mutation_createCareRegimen(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:   "Mutation",
+		Field:    field,
+		Args:     nil,
+		IsMethod: true,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	rawArgs := field.ArgumentMap(ec.Variables)
+	args, err := ec.field_Mutation_createCareRegimen_args(ctx, rawArgs)
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	fc.Args = args
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Mutation().CreateCareRegimen(rctx, args["input"].(model.NewCareRegimen))
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(*model.CareRegimen)
+	fc.Result = res
+	return ec.marshalNCareRegimen2ᚖgithubᚗcomᚋwonesyᚋplantparenthoodᚋgraphᚋmodelᚐCareRegimen(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) _Mutation_addPlantToNursery(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
@@ -899,6 +1249,47 @@ func (ec *executionContext) _Mutation_addPlantToNursery(ctx context.Context, fie
 	res := resTmp.(*model.PlantBaby)
 	fc.Result = res
 	return ec.marshalNPlantBaby2ᚖgithubᚗcomᚋwonesyᚋplantparenthoodᚋgraphᚋmodelᚐPlantBaby(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _Mutation_createWatering(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:   "Mutation",
+		Field:    field,
+		Args:     nil,
+		IsMethod: true,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	rawArgs := field.ArgumentMap(ec.Variables)
+	args, err := ec.field_Mutation_createWatering_args(ctx, rawArgs)
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	fc.Args = args
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Mutation().CreateWatering(rctx, args["input"].(*model.NewWatering))
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(*model.Watering)
+	fc.Result = res
+	return ec.marshalNWatering2ᚖgithubᚗcomᚋwonesyᚋplantparenthoodᚋgraphᚋmodelᚐWatering(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) _Mutation_login(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
@@ -1221,40 +1612,6 @@ func (ec *executionContext) _PlantBaby_id(ctx context.Context, field graphql.Col
 	return ec.marshalNID2string(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) _PlantBaby_owner(ctx context.Context, field graphql.CollectedField, obj *model.PlantBaby) (ret graphql.Marshaler) {
-	defer func() {
-		if r := recover(); r != nil {
-			ec.Error(ctx, ec.Recover(ctx, r))
-			ret = graphql.Null
-		}
-	}()
-	fc := &graphql.FieldContext{
-		Object:   "PlantBaby",
-		Field:    field,
-		Args:     nil,
-		IsMethod: false,
-	}
-
-	ctx = graphql.WithFieldContext(ctx, fc)
-	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
-		ctx = rctx // use context from middleware stack in children
-		return obj.Owner, nil
-	})
-	if err != nil {
-		ec.Error(ctx, err)
-		return graphql.Null
-	}
-	if resTmp == nil {
-		if !graphql.HasFieldError(ctx, fc) {
-			ec.Errorf(ctx, "must not be null")
-		}
-		return graphql.Null
-	}
-	res := resTmp.(*model.Member)
-	fc.Result = res
-	return ec.marshalNMember2ᚖgithubᚗcomᚋwonesyᚋplantparenthoodᚋgraphᚋmodelᚐMember(ctx, field.Selections, res)
-}
-
 func (ec *executionContext) _PlantBaby_plant(ctx context.Context, field graphql.CollectedField, obj *model.PlantBaby) (ret graphql.Marshaler) {
 	defer func() {
 		if r := recover(); r != nil {
@@ -1287,6 +1644,40 @@ func (ec *executionContext) _PlantBaby_plant(ctx context.Context, field graphql.
 	res := resTmp.(*model.Plant)
 	fc.Result = res
 	return ec.marshalNPlant2ᚖgithubᚗcomᚋwonesyᚋplantparenthoodᚋgraphᚋmodelᚐPlant(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _PlantBaby_ownerID(ctx context.Context, field graphql.CollectedField, obj *model.PlantBaby) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:   "PlantBaby",
+		Field:    field,
+		Args:     nil,
+		IsMethod: false,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.OwnerID, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(string)
+	fc.Result = res
+	return ec.marshalNString2string(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) _PlantBaby_careRegimen(ctx context.Context, field graphql.CollectedField, obj *model.PlantBaby) (ret graphql.Marshaler) {
@@ -1323,6 +1714,108 @@ func (ec *executionContext) _PlantBaby_careRegimen(ctx context.Context, field gr
 	return ec.marshalNCareRegimen2ᚖgithubᚗcomᚋwonesyᚋplantparenthoodᚋgraphᚋmodelᚐCareRegimen(ctx, field.Selections, res)
 }
 
+func (ec *executionContext) _PlantBaby_location(ctx context.Context, field graphql.CollectedField, obj *model.PlantBaby) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:   "PlantBaby",
+		Field:    field,
+		Args:     nil,
+		IsMethod: false,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Location, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(string)
+	fc.Result = res
+	return ec.marshalNString2string(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _PlantBaby_nickname(ctx context.Context, field graphql.CollectedField, obj *model.PlantBaby) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:   "PlantBaby",
+		Field:    field,
+		Args:     nil,
+		IsMethod: false,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Nickname, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(string)
+	fc.Result = res
+	return ec.marshalNString2string(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _PlantBaby_addedOn(ctx context.Context, field graphql.CollectedField, obj *model.PlantBaby) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:   "PlantBaby",
+		Field:    field,
+		Args:     nil,
+		IsMethod: false,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.AddedOn, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(string)
+	fc.Result = res
+	return ec.marshalNString2string(ctx, field.Selections, res)
+}
+
 func (ec *executionContext) _Query_members(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
 	defer func() {
 		if r := recover(); r != nil {
@@ -1355,6 +1848,47 @@ func (ec *executionContext) _Query_members(ctx context.Context, field graphql.Co
 	res := resTmp.([]*model.Member)
 	fc.Result = res
 	return ec.marshalNMember2ᚕᚖgithubᚗcomᚋwonesyᚋplantparenthoodᚋgraphᚋmodelᚐMemberᚄ(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _Query_memberById(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:   "Query",
+		Field:    field,
+		Args:     nil,
+		IsMethod: true,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	rawArgs := field.ArgumentMap(ec.Variables)
+	args, err := ec.field_Query_memberById_args(ctx, rawArgs)
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	fc.Args = args
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Query().MemberByID(rctx, args["id"].(string))
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(*model.Member)
+	fc.Result = res
+	return ec.marshalNMember2ᚖgithubᚗcomᚋwonesyᚋplantparenthoodᚋgraphᚋmodelᚐMember(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) _Query_plants(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
@@ -1391,6 +1925,47 @@ func (ec *executionContext) _Query_plants(ctx context.Context, field graphql.Col
 	return ec.marshalNPlant2ᚕᚖgithubᚗcomᚋwonesyᚋplantparenthoodᚋgraphᚋmodelᚐPlantᚄ(ctx, field.Selections, res)
 }
 
+func (ec *executionContext) _Query_plantById(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:   "Query",
+		Field:    field,
+		Args:     nil,
+		IsMethod: true,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	rawArgs := field.ArgumentMap(ec.Variables)
+	args, err := ec.field_Query_plantById_args(ctx, rawArgs)
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	fc.Args = args
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Query().PlantByID(rctx, args["id"].(string))
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(*model.Plant)
+	fc.Result = res
+	return ec.marshalNPlant2ᚖgithubᚗcomᚋwonesyᚋplantparenthoodᚋgraphᚋmodelᚐPlant(ctx, field.Selections, res)
+}
+
 func (ec *executionContext) _Query_nursery(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
 	defer func() {
 		if r := recover(); r != nil {
@@ -1423,6 +1998,163 @@ func (ec *executionContext) _Query_nursery(ctx context.Context, field graphql.Co
 	res := resTmp.([]*model.PlantBaby)
 	fc.Result = res
 	return ec.marshalNPlantBaby2ᚕᚖgithubᚗcomᚋwonesyᚋplantparenthoodᚋgraphᚋmodelᚐPlantBabyᚄ(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _Query_plantFromNursery(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:   "Query",
+		Field:    field,
+		Args:     nil,
+		IsMethod: true,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	rawArgs := field.ArgumentMap(ec.Variables)
+	args, err := ec.field_Query_plantFromNursery_args(ctx, rawArgs)
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	fc.Args = args
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Query().PlantFromNursery(rctx, args["id"].(string))
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(*model.PlantBaby)
+	fc.Result = res
+	return ec.marshalNPlantBaby2ᚖgithubᚗcomᚋwonesyᚋplantparenthoodᚋgraphᚋmodelᚐPlantBaby(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _Query_careRegimens(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:   "Query",
+		Field:    field,
+		Args:     nil,
+		IsMethod: true,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Query().CareRegimens(rctx)
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.([]*model.CareRegimen)
+	fc.Result = res
+	return ec.marshalNCareRegimen2ᚕᚖgithubᚗcomᚋwonesyᚋplantparenthoodᚋgraphᚋmodelᚐCareRegimenᚄ(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _Query_careRegimenByID(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:   "Query",
+		Field:    field,
+		Args:     nil,
+		IsMethod: true,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	rawArgs := field.ArgumentMap(ec.Variables)
+	args, err := ec.field_Query_careRegimenByID_args(ctx, rawArgs)
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	fc.Args = args
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Query().CareRegimenByID(rctx, args["id"].(string))
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(*model.CareRegimen)
+	fc.Result = res
+	return ec.marshalNCareRegimen2ᚖgithubᚗcomᚋwonesyᚋplantparenthoodᚋgraphᚋmodelᚐCareRegimen(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _Query_waterings(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:   "Query",
+		Field:    field,
+		Args:     nil,
+		IsMethod: true,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	rawArgs := field.ArgumentMap(ec.Variables)
+	args, err := ec.field_Query_waterings_args(ctx, rawArgs)
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	fc.Args = args
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Query().Waterings(rctx, args["plantBabyID"].(string))
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.([]*model.Watering)
+	fc.Result = res
+	return ec.marshalNWatering2ᚕᚖgithubᚗcomᚋwonesyᚋplantparenthoodᚋgraphᚋmodelᚐWateringᚄ(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) _Query___type(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
@@ -1492,6 +2224,142 @@ func (ec *executionContext) _Query___schema(ctx context.Context, field graphql.C
 	res := resTmp.(*introspection.Schema)
 	fc.Result = res
 	return ec.marshalO__Schema2ᚖgithubᚗcomᚋ99designsᚋgqlgenᚋgraphqlᚋintrospectionᚐSchema(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _Watering_id(ctx context.Context, field graphql.CollectedField, obj *model.Watering) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:   "Watering",
+		Field:    field,
+		Args:     nil,
+		IsMethod: false,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.ID, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(string)
+	fc.Result = res
+	return ec.marshalNID2string(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _Watering_wateredOn(ctx context.Context, field graphql.CollectedField, obj *model.Watering) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:   "Watering",
+		Field:    field,
+		Args:     nil,
+		IsMethod: false,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.WateredOn, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(string)
+	fc.Result = res
+	return ec.marshalNString2string(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _Watering_amountml(ctx context.Context, field graphql.CollectedField, obj *model.Watering) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:   "Watering",
+		Field:    field,
+		Args:     nil,
+		IsMethod: false,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Amountml, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(int)
+	fc.Result = res
+	return ec.marshalNInt2int(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _Watering_plantBabyID(ctx context.Context, field graphql.CollectedField, obj *model.Watering) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:   "Watering",
+		Field:    field,
+		Args:     nil,
+		IsMethod: false,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.PlantBabyID, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(string)
+	fc.Result = res
+	return ec.marshalNString2string(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) ___Directive_name(ctx context.Context, field graphql.CollectedField, obj *introspection.Directive) (ret graphql.Marshaler) {
@@ -2573,6 +3441,30 @@ func (ec *executionContext) unmarshalInputLogin(ctx context.Context, obj interfa
 	return it, nil
 }
 
+func (ec *executionContext) unmarshalInputNewCareRegimen(ctx context.Context, obj interface{}) (model.NewCareRegimen, error) {
+	var it model.NewCareRegimen
+	var asMap = obj.(map[string]interface{})
+
+	for k, v := range asMap {
+		switch k {
+		case "waterml":
+			var err error
+			it.Waterml, err = ec.unmarshalNInt2int(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "waterhr":
+			var err error
+			it.Waterhr, err = ec.unmarshalNInt2int(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		}
+	}
+
+	return it, nil
+}
+
 func (ec *executionContext) unmarshalInputNewMember(ctx context.Context, obj interface{}) (model.NewMember, error) {
 	var it model.NewMember
 	var asMap = obj.(map[string]interface{})
@@ -2603,9 +3495,27 @@ func (ec *executionContext) unmarshalInputNewNurseryAddition(ctx context.Context
 
 	for k, v := range asMap {
 		switch k {
-		case "plant":
+		case "plantId":
 			var err error
-			it.Plant, err = ec.unmarshalNString2string(ctx, v)
+			it.PlantID, err = ec.unmarshalNString2string(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "careRegimenId":
+			var err error
+			it.CareRegimenID, err = ec.unmarshalNString2string(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "nickname":
+			var err error
+			it.Nickname, err = ec.unmarshalNString2string(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "location":
+			var err error
+			it.Location, err = ec.unmarshalNString2string(ctx, v)
 			if err != nil {
 				return it, err
 			}
@@ -2648,6 +3558,36 @@ func (ec *executionContext) unmarshalInputNewPlant(ctx context.Context, obj inte
 		case "soilPreference":
 			var err error
 			it.SoilPreference, err = ec.unmarshalNString2string(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		}
+	}
+
+	return it, nil
+}
+
+func (ec *executionContext) unmarshalInputNewWatering(ctx context.Context, obj interface{}) (model.NewWatering, error) {
+	var it model.NewWatering
+	var asMap = obj.(map[string]interface{})
+
+	for k, v := range asMap {
+		switch k {
+		case "plantBabyID":
+			var err error
+			it.PlantBabyID, err = ec.unmarshalNString2string(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "amountml":
+			var err error
+			it.Amountml, err = ec.unmarshalNInt2int(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "wateredOn":
+			var err error
+			it.WateredOn, err = ec.unmarshalNString2string(ctx, v)
 			if err != nil {
 				return it, err
 			}
@@ -2782,8 +3722,18 @@ func (ec *executionContext) _Mutation(ctx context.Context, sel ast.SelectionSet)
 			if out.Values[i] == graphql.Null {
 				invalids++
 			}
+		case "createCareRegimen":
+			out.Values[i] = ec._Mutation_createCareRegimen(ctx, field)
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
 		case "addPlantToNursery":
 			out.Values[i] = ec._Mutation_addPlantToNursery(ctx, field)
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
+		case "createWatering":
+			out.Values[i] = ec._Mutation_createWatering(ctx, field)
 			if out.Values[i] == graphql.Null {
 				invalids++
 			}
@@ -2876,18 +3826,33 @@ func (ec *executionContext) _PlantBaby(ctx context.Context, sel ast.SelectionSet
 			if out.Values[i] == graphql.Null {
 				invalids++
 			}
-		case "owner":
-			out.Values[i] = ec._PlantBaby_owner(ctx, field, obj)
-			if out.Values[i] == graphql.Null {
-				invalids++
-			}
 		case "plant":
 			out.Values[i] = ec._PlantBaby_plant(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
 				invalids++
 			}
+		case "ownerID":
+			out.Values[i] = ec._PlantBaby_ownerID(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
 		case "careRegimen":
 			out.Values[i] = ec._PlantBaby_careRegimen(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
+		case "location":
+			out.Values[i] = ec._PlantBaby_location(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
+		case "nickname":
+			out.Values[i] = ec._PlantBaby_nickname(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
+		case "addedOn":
+			out.Values[i] = ec._PlantBaby_addedOn(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
 				invalids++
 			}
@@ -2931,6 +3896,20 @@ func (ec *executionContext) _Query(ctx context.Context, sel ast.SelectionSet) gr
 				}
 				return res
 			})
+		case "memberById":
+			field := field
+			out.Concurrently(i, func() (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._Query_memberById(ctx, field)
+				if res == graphql.Null {
+					atomic.AddUint32(&invalids, 1)
+				}
+				return res
+			})
 		case "plants":
 			field := field
 			out.Concurrently(i, func() (res graphql.Marshaler) {
@@ -2940,6 +3919,20 @@ func (ec *executionContext) _Query(ctx context.Context, sel ast.SelectionSet) gr
 					}
 				}()
 				res = ec._Query_plants(ctx, field)
+				if res == graphql.Null {
+					atomic.AddUint32(&invalids, 1)
+				}
+				return res
+			})
+		case "plantById":
+			field := field
+			out.Concurrently(i, func() (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._Query_plantById(ctx, field)
 				if res == graphql.Null {
 					atomic.AddUint32(&invalids, 1)
 				}
@@ -2959,10 +3952,108 @@ func (ec *executionContext) _Query(ctx context.Context, sel ast.SelectionSet) gr
 				}
 				return res
 			})
+		case "plantFromNursery":
+			field := field
+			out.Concurrently(i, func() (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._Query_plantFromNursery(ctx, field)
+				if res == graphql.Null {
+					atomic.AddUint32(&invalids, 1)
+				}
+				return res
+			})
+		case "careRegimens":
+			field := field
+			out.Concurrently(i, func() (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._Query_careRegimens(ctx, field)
+				if res == graphql.Null {
+					atomic.AddUint32(&invalids, 1)
+				}
+				return res
+			})
+		case "careRegimenByID":
+			field := field
+			out.Concurrently(i, func() (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._Query_careRegimenByID(ctx, field)
+				if res == graphql.Null {
+					atomic.AddUint32(&invalids, 1)
+				}
+				return res
+			})
+		case "waterings":
+			field := field
+			out.Concurrently(i, func() (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._Query_waterings(ctx, field)
+				if res == graphql.Null {
+					atomic.AddUint32(&invalids, 1)
+				}
+				return res
+			})
 		case "__type":
 			out.Values[i] = ec._Query___type(ctx, field)
 		case "__schema":
 			out.Values[i] = ec._Query___schema(ctx, field)
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch()
+	if invalids > 0 {
+		return graphql.Null
+	}
+	return out
+}
+
+var wateringImplementors = []string{"Watering"}
+
+func (ec *executionContext) _Watering(ctx context.Context, sel ast.SelectionSet, obj *model.Watering) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, wateringImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	var invalids uint32
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("Watering")
+		case "id":
+			out.Values[i] = ec._Watering_id(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
+		case "wateredOn":
+			out.Values[i] = ec._Watering_wateredOn(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
+		case "amountml":
+			out.Values[i] = ec._Watering_amountml(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
+		case "plantBabyID":
+			out.Values[i] = ec._Watering_plantBabyID(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
 		default:
 			panic("unknown field " + strconv.Quote(field.Name))
 		}
@@ -3237,6 +4328,43 @@ func (ec *executionContext) marshalNCareRegimen2githubᚗcomᚋwonesyᚋplantpar
 	return ec._CareRegimen(ctx, sel, &v)
 }
 
+func (ec *executionContext) marshalNCareRegimen2ᚕᚖgithubᚗcomᚋwonesyᚋplantparenthoodᚋgraphᚋmodelᚐCareRegimenᚄ(ctx context.Context, sel ast.SelectionSet, v []*model.CareRegimen) graphql.Marshaler {
+	ret := make(graphql.Array, len(v))
+	var wg sync.WaitGroup
+	isLen1 := len(v) == 1
+	if !isLen1 {
+		wg.Add(len(v))
+	}
+	for i := range v {
+		i := i
+		fc := &graphql.FieldContext{
+			Index:  &i,
+			Result: &v[i],
+		}
+		ctx := graphql.WithFieldContext(ctx, fc)
+		f := func(i int) {
+			defer func() {
+				if r := recover(); r != nil {
+					ec.Error(ctx, ec.Recover(ctx, r))
+					ret = nil
+				}
+			}()
+			if !isLen1 {
+				defer wg.Done()
+			}
+			ret[i] = ec.marshalNCareRegimen2ᚖgithubᚗcomᚋwonesyᚋplantparenthoodᚋgraphᚋmodelᚐCareRegimen(ctx, sel, v[i])
+		}
+		if isLen1 {
+			f(i)
+		} else {
+			go f(i)
+		}
+
+	}
+	wg.Wait()
+	return ret
+}
+
 func (ec *executionContext) marshalNCareRegimen2ᚖgithubᚗcomᚋwonesyᚋplantparenthoodᚋgraphᚋmodelᚐCareRegimen(ctx context.Context, sel ast.SelectionSet, v *model.CareRegimen) graphql.Marshaler {
 	if v == nil {
 		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
@@ -3328,6 +4456,10 @@ func (ec *executionContext) marshalNMember2ᚖgithubᚗcomᚋwonesyᚋplantparen
 		return graphql.Null
 	}
 	return ec._Member(ctx, sel, v)
+}
+
+func (ec *executionContext) unmarshalNNewCareRegimen2githubᚗcomᚋwonesyᚋplantparenthoodᚋgraphᚋmodelᚐNewCareRegimen(ctx context.Context, v interface{}) (model.NewCareRegimen, error) {
+	return ec.unmarshalInputNewCareRegimen(ctx, v)
 }
 
 func (ec *executionContext) unmarshalNNewMember2githubᚗcomᚋwonesyᚋplantparenthoodᚋgraphᚋmodelᚐNewMember(ctx context.Context, v interface{}) (model.NewMember, error) {
@@ -3460,6 +4592,57 @@ func (ec *executionContext) marshalNString2string(ctx context.Context, sel ast.S
 		}
 	}
 	return res
+}
+
+func (ec *executionContext) marshalNWatering2githubᚗcomᚋwonesyᚋplantparenthoodᚋgraphᚋmodelᚐWatering(ctx context.Context, sel ast.SelectionSet, v model.Watering) graphql.Marshaler {
+	return ec._Watering(ctx, sel, &v)
+}
+
+func (ec *executionContext) marshalNWatering2ᚕᚖgithubᚗcomᚋwonesyᚋplantparenthoodᚋgraphᚋmodelᚐWateringᚄ(ctx context.Context, sel ast.SelectionSet, v []*model.Watering) graphql.Marshaler {
+	ret := make(graphql.Array, len(v))
+	var wg sync.WaitGroup
+	isLen1 := len(v) == 1
+	if !isLen1 {
+		wg.Add(len(v))
+	}
+	for i := range v {
+		i := i
+		fc := &graphql.FieldContext{
+			Index:  &i,
+			Result: &v[i],
+		}
+		ctx := graphql.WithFieldContext(ctx, fc)
+		f := func(i int) {
+			defer func() {
+				if r := recover(); r != nil {
+					ec.Error(ctx, ec.Recover(ctx, r))
+					ret = nil
+				}
+			}()
+			if !isLen1 {
+				defer wg.Done()
+			}
+			ret[i] = ec.marshalNWatering2ᚖgithubᚗcomᚋwonesyᚋplantparenthoodᚋgraphᚋmodelᚐWatering(ctx, sel, v[i])
+		}
+		if isLen1 {
+			f(i)
+		} else {
+			go f(i)
+		}
+
+	}
+	wg.Wait()
+	return ret
+}
+
+func (ec *executionContext) marshalNWatering2ᚖgithubᚗcomᚋwonesyᚋplantparenthoodᚋgraphᚋmodelᚐWatering(ctx context.Context, sel ast.SelectionSet, v *model.Watering) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	return ec._Watering(ctx, sel, v)
 }
 
 func (ec *executionContext) marshalN__Directive2githubᚗcomᚋ99designsᚋgqlgenᚋgraphqlᚋintrospectionᚐDirective(ctx context.Context, sel ast.SelectionSet, v introspection.Directive) graphql.Marshaler {
@@ -3709,6 +4892,18 @@ func (ec *executionContext) marshalOBoolean2ᚖbool(ctx context.Context, sel ast
 		return graphql.Null
 	}
 	return ec.marshalOBoolean2bool(ctx, sel, *v)
+}
+
+func (ec *executionContext) unmarshalONewWatering2githubᚗcomᚋwonesyᚋplantparenthoodᚋgraphᚋmodelᚐNewWatering(ctx context.Context, v interface{}) (model.NewWatering, error) {
+	return ec.unmarshalInputNewWatering(ctx, v)
+}
+
+func (ec *executionContext) unmarshalONewWatering2ᚖgithubᚗcomᚋwonesyᚋplantparenthoodᚋgraphᚋmodelᚐNewWatering(ctx context.Context, v interface{}) (*model.NewWatering, error) {
+	if v == nil {
+		return nil, nil
+	}
+	res, err := ec.unmarshalONewWatering2githubᚗcomᚋwonesyᚋplantparenthoodᚋgraphᚋmodelᚐNewWatering(ctx, v)
+	return &res, err
 }
 
 func (ec *executionContext) unmarshalOString2string(ctx context.Context, v interface{}) (string, error) {

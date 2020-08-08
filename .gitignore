@@ -1,0 +1,8 @@
+# binaries
+plantparenthood
+
+# databases
+*.db
+
+# editor specific stuff
+.vscode/

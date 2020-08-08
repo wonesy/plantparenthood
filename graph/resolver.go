@@ -7,6 +7,7 @@ import (
 	ppmember "github.com/wonesy/plantparenthood/internal/member"
 	ppplant "github.com/wonesy/plantparenthood/internal/plant"
 	ppplantbaby "github.com/wonesy/plantparenthood/internal/plantbaby"
+	ppwatering "github.com/wonesy/plantparenthood/internal/watering"
 )
 
 // Resolver graphql type resolver
@@ -16,6 +17,7 @@ type Resolver struct {
 	plantHandler       *ppplant.Handler
 	careRegimenHandler *ppcareregimen.Handler
 	plantBabyHandler   *ppplantbaby.Handler
+	wateringHandler    *ppwatering.Handler
 }
 
 // NewResolver constructor for Resolver
@@ -25,6 +27,7 @@ func NewResolver(
 	ph *ppplant.Handler,
 	crh *ppcareregimen.Handler,
 	pbh *ppplantbaby.Handler,
+	wh *ppwatering.Handler,
 ) *Resolver {
 	return &Resolver{
 		db:                 db,
@@ -32,5 +35,6 @@ func NewResolver(
 		plantHandler:       ph,
 		careRegimenHandler: crh,
 		plantBabyHandler:   pbh,
+		wateringHandler:    wh,
 	}
 }

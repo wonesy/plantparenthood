@@ -4,6 +4,7 @@ import (
 	"database/sql"
 
 	"github.com/wonesy/plantparenthood/graph/model"
+	"github.com/wonesy/plantparenthood/internal/pkg/db"
 	"github.com/wonesy/plantparenthood/util"
 )
 
@@ -20,10 +21,10 @@ func NewHandler(conn *sql.DB) *Handler {
 }
 
 // Create insert into database
-func (h *Handler) Create(p *model.NewPlant) (string, error) {
+func (h *Handler) Create(p *model.NewPlant) (*model.Plant, error) {
 	insertSQL := `
 	INSERT INTO plant (id, common_name, botanical_name, water_preference, sun_preference, soil_preference)
-	VALUES ($1,$2,$3,$4,$5, $6) RETURNING id`
+	VALUES ($1,$2,$3,$4,$5,$6) RETURNING id`
 
 	id := util.GenerateID()
 
@@ -31,21 +32,57 @@ func (h *Handler) Create(p *model.NewPlant) (string, error) {
 	if err := h.conn.QueryRow(
 		insertSQL,
 		id,
-		p.BotanicalName,
 		p.CommonName,
+		p.BotanicalName,
 		p.WaterPreference,
 		p.SunPreference,
 		p.SoilPreference,
 	).Scan(&returnedID); err != nil {
-		return "", err
+		return nil, err
 	}
 
-	return returnedID, nil
+	return h.GetByID(returnedID)
+}
+
+// GetByID fetch a plant by ID
+func (h *Handler) GetByID(id string) (*model.Plant, error) {
+	selectSQL := `
+	SELECT id, common_name, botanical_name, sun_preference,
+	  water_preference, soil_preference
+	FROM plant WHERE id=$1`
+
+	stmt, err := h.conn.Prepare(selectSQL)
+	if err != nil {
+		return nil, err
+	}
+	defer stmt.Close()
+
+	res := stmt.QueryRow(id)
+	if err != nil {
+		return nil, err
+	}
+
+	p := &model.Plant{}
+	if err := res.Scan(
+		&p.ID,
+		&p.CommonName,
+		&p.BotanicalName,
+		&p.SunPreference,
+		&p.WaterPreference,
+		&p.SoilPreference,
+	); err != nil {
+		return nil, &db.NoSuchEntity{Type: "plant"}
+	}
+
+	return p, nil
 }
 
 // GetAll fetch all plants from database
 func (h *Handler) GetAll() ([]*model.Plant, error) {
-	selectSQL := "SELECT * FROM plant"
+	selectSQL := `
+	SELECT id, common_name, botanical_name, sun_preference,
+	  water_preference, soil_preference
+	FROM plant`
 
 	stmt, err := h.conn.Prepare(selectSQL)
 	if err != nil {
@@ -62,7 +99,14 @@ func (h *Handler) GetAll() ([]*model.Plant, error) {
 	plants := []*model.Plant{}
 	for rows.Next() {
 		p := &model.Plant{}
-		rows.Scan(&p.ID, &p.CommonName, &p.BotanicalName, &p.WaterPreference, &p.SunPreference, &p.SoilPreference)
+		rows.Scan(
+			&p.ID,
+			&p.CommonName,
+			&p.BotanicalName,
+			&p.SunPreference,
+			&p.WaterPreference,
+			&p.SoilPreference,
+		)
 		plants = append(plants, p)
 	}
 

@@ -1,7 +1,10 @@
 package member
 
 import (
+	"context"
 	"database/sql"
+
+	"github.com/wonesy/plantparenthood/internal/pkg/db"
 
 	"github.com/wonesy/plantparenthood/graph/model"
 	"github.com/wonesy/plantparenthood/internal/auth"
@@ -21,23 +24,23 @@ func NewHandler(conn *sql.DB) *Handler {
 }
 
 // Create insert into database
-func (h *Handler) Create(m *model.NewMember) (string, error) {
+func (h *Handler) Create(m *model.NewMember) (*model.Member, error) {
 	insertSQL := `INSERT INTO member (id,email,password) VALUES ($1,$2,$3) RETURNING id`
 
 	id := util.GenerateID()
 
 	hashPass, err := auth.HashPassword(m.Password)
 	if err != nil {
-		return "", err
+		return nil, err
 	}
 
 	returnedID := ""
 	err = h.conn.QueryRow(insertSQL, id, m.Email, string(hashPass)).Scan(&returnedID)
 	if err != nil {
-		return "", err
+		return nil, err
 	}
 
-	return returnedID, nil
+	return h.GetByID(returnedID)
 }
 
 // GetAll fetch all members from database
@@ -71,7 +74,7 @@ func (h *Handler) GetByID(id string) (*model.Member, error) {
 	selectSQL := `
 	SELECT id, email, created_on
 	FROM member
-	WHERE id=?`
+	WHERE id=$1`
 
 	stmt, err := h.conn.Prepare(selectSQL)
 	if err != nil {
@@ -79,15 +82,14 @@ func (h *Handler) GetByID(id string) (*model.Member, error) {
 	}
 	defer stmt.Close()
 
-	rows, err := stmt.Query(id)
+	res := stmt.QueryRow(id)
 	if err != nil {
 		return nil, err
 	}
-	defer rows.Close()
 
 	m := &model.Member{}
-	if err := rows.Scan(&m.ID, &m.Email, &m.CreatedOn); err != nil {
-		return nil, err
+	if err := res.Scan(&m.ID, &m.Email, &m.CreatedOn); err != nil {
+		return nil, &db.NoSuchEntity{Type: "member"}
 	}
 
 	return m, nil
@@ -95,7 +97,10 @@ func (h *Handler) GetByID(id string) (*model.Member, error) {
 
 // Login logs a member in
 func (h *Handler) Login(credentials *model.Login) (string, error) {
-	selectSQL := "SELECT id, email, password FROM member WHERE email=$1"
+	selectSQL := `
+	SELECT id, email, password
+	FROM member
+	WHERE email=$1`
 
 	stmt, err := h.conn.Prepare(selectSQL)
 	if err != nil {
@@ -103,21 +108,33 @@ func (h *Handler) Login(credentials *model.Login) (string, error) {
 	}
 	defer stmt.Close()
 
-	res := stmt.QueryRow(credentials.Email)
-	if err != nil {
-		return "", err
-	}
-
 	id := ""
 	email := ""
 	hashedPass := ""
-	if err := res.Scan(&id, &email, &hashedPass); err != nil {
-		return "", err
+
+	if err := stmt.QueryRow(credentials.Email).Scan(&id, &email, &hashedPass); err != nil {
+		return "", &AuthenticationError{}
 	}
 
 	if err := auth.Authenticate(hashedPass, credentials.Password); err != nil {
-		return "", err
+		return "", &AuthenticationError{}
 	}
 
 	return id, nil
+}
+
+// ValidateMemberFromContext auths member from ctx token and verifies it exists in DB
+func (h *Handler) ValidateMemberFromContext(ctx context.Context) (string, error) {
+	memberID := auth.IDFromContext(ctx)
+	if memberID == "" {
+		return "", &auth.AuthenticationError{}
+	}
+
+	// ensure that this user exists before adding to the database
+	_, err := h.GetByID(memberID)
+	if err != nil {
+		return "", &db.NoSuchEntity{Type: "member"}
+	}
+
+	return memberID, nil
 }

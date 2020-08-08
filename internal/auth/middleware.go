@@ -25,15 +25,13 @@ func CheckTokenMiddleware() func(http.Handler) http.Handler {
 				return
 			}
 
-			//validate jwt token
-			tokenStr := header
-			id, err := jwt.ParseToken(tokenStr)
-			if err != nil {
+			id, err := jwt.ParseToken(header)
+			if err != nil || id == "" {
 				http.Error(w, "Invalid token", http.StatusForbidden)
 				return
 			}
 
-			ctx := context.WithValue(r.Context(), memberCtxKey, &id)
+			ctx := context.WithValue(r.Context(), memberCtxKey, id)
 
 			// and call the next with our new context
 			r = r.WithContext(ctx)
@@ -44,6 +42,9 @@ func CheckTokenMiddleware() func(http.Handler) http.Handler {
 
 // IDFromContext finds the member ID from the context. REQUIRES Middleware to have run.
 func IDFromContext(ctx context.Context) string {
-	raw, _ := ctx.Value(memberCtxKey).(string)
-	return raw
+	raw := ctx.Value(memberCtxKey)
+	if raw == nil {
+		return ""
+	}
+	return raw.(string)
 }

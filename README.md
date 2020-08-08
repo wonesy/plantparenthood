@@ -15,6 +15,8 @@ Some other tools you may need to install:
 ```
 go get github.com/99designs/gqlgen
 go get github.com/golang-migrate/migrate
+# download migrate bin from https://github.com/golang-migrate/migrate/releases
+# i think you can install on mac via brew
 ```
 
 1. start the database

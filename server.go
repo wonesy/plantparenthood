@@ -17,6 +17,7 @@ import (
 	database "github.com/wonesy/plantparenthood/internal/pkg/db"
 	ppplant "github.com/wonesy/plantparenthood/internal/plant"
 	ppplantbaby "github.com/wonesy/plantparenthood/internal/plantbaby"
+	ppwatering "github.com/wonesy/plantparenthood/internal/watering"
 )
 
 const defaultPort = "8080"
@@ -42,9 +43,25 @@ func main() {
 	plantHandler := ppplant.NewHandler(conn)
 	plantBabyHandler := ppplantbaby.NewHandler(conn)
 	careRegimenHandler := ppcareregimen.NewHandler(conn)
+	wateringHandler := ppwatering.NewHandler(conn)
+
+	/************************************************/
+	/************************************************/
+	/************************************************/
+	/************************************************/
+	/************************************************/
+	/************************************************/
+	// seed database, this is for testing and early development
+	seed(memberHandler, careRegimenHandler, plantHandler, plantBabyHandler, wateringHandler)
+	/************************************************/
+	/************************************************/
+	/************************************************/
+	/************************************************/
+	/************************************************/
+	/************************************************/
 
 	// initialize the resolver
-	resolver := graph.NewResolver(conn, memberHandler, plantHandler, careRegimenHandler, plantBabyHandler)
+	resolver := graph.NewResolver(conn, memberHandler, plantHandler, careRegimenHandler, plantBabyHandler, wateringHandler)
 
 	// create gql server
 	srv := handler.NewDefaultServer(generated.NewExecutableSchema(generated.Config{Resolvers: resolver}))

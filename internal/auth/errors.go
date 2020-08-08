@@ -1,9 +1,9 @@
 package auth
 
-// UnauthenticatedError when user is not authenticated
-type UnauthenticatedError struct{}
+// AuthenticationError when user is not authenticated
+type AuthenticationError struct{}
 
 // Error error message
-func (u *UnauthenticatedError) Error() string {
+func (u *AuthenticationError) Error() string {
 	return "Unauthenticated"
 }
