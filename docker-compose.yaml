@@ -1,0 +1,17 @@
+version: '3.6'
+services:
+  postgres:
+    image: postgres:12
+    restart: always
+    container_name: ppdb
+    ports:
+      - "5432:5432/tcp"
+    # volumes:
+    #   - db_data:/var/lib/postgresql/data
+    environment:
+      POSTGRES_USER: pp
+      POSTGRES_PASSWORD: password
+      POSTGRES_DB: plantparenthood
+# volumes:
+#   db_data:
+

@@ -1,0 +1,76 @@
+########################################################
+# Base objects
+########################################################
+type Plant {
+  id: ID!
+  commonName: String!
+  botanicalName: String!
+  waterPreference: String!
+  sunPreference: String!
+  soilPreference: String!
+}
+
+type Member {
+  id: ID!
+  email: String!
+  createdOn: String!
+}
+
+type CareRegimen {
+  id: ID!
+  waterml: Int!
+  waterhr: Int!
+}
+
+type PlantBaby {
+  id: ID!
+  owner: Member!
+  plant: Plant!
+  careRegimen: CareRegimen!
+}
+
+########################################################
+# Input objects
+########################################################
+input NewMember {
+  email: String!
+  password: String!
+}
+
+input NewPlant {
+  commonName: String!
+  botanicalName: String!
+  waterPreference: String!
+  sunPreference: String!
+  soilPreference: String!
+}
+
+input NewNurseryAddition {
+  plant: String!
+}
+
+input Login {
+  email: String!
+  password: String!
+}
+
+input RefreshToken{
+  token: String!
+}
+
+########################################################
+# Queries and Mutations
+########################################################
+type Query {
+  members: [Member!]!
+  plants: [Plant!]!
+  nursery: [PlantBaby!]!
+}
+
+type Mutation {
+  createMember(input: NewMember!): String!
+  createPlant(input: NewPlant!): String!
+  addPlantToNursery(input: NewNurseryAddition!): PlantBaby!
+  login(input: Login!): String!
+  refreshToken(input: RefreshToken!): String!
+}
