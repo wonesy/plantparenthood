@@ -25,8 +25,6 @@ func NewHandler(conn *sql.DB) *Handler {
 
 // Create insert into database
 func (h *Handler) Create(m *model.NewMember) (*model.Member, error) {
-	insertSQL := `INSERT INTO member (id,email,password) VALUES ($1,$2,$3) RETURNING id`
-
 	id := util.GenerateID()
 
 	hashPass, err := auth.HashPassword(m.Password)
@@ -34,20 +32,31 @@ func (h *Handler) Create(m *model.NewMember) (*model.Member, error) {
 		return nil, err
 	}
 
-	returnedID := ""
-	err = h.conn.QueryRow(insertSQL, id, m.Email, string(hashPass)).Scan(&returnedID)
+	tx, err := h.conn.Begin()
 	if err != nil {
 		return nil, err
 	}
 
-	return h.GetByID(returnedID)
+	stmt, err := tx.Prepare(sqlCreateMember)
+	if err != nil {
+		return nil, err
+	}
+
+	_, err = stmt.Exec(id, m.Email, string(hashPass))
+	if err != nil {
+		return nil, err
+	}
+
+	if err := tx.Commit(); err != nil {
+		return nil, err
+	}
+
+	return h.GetByID(id)
 }
 
 // GetAll fetch all members from database
 func (h *Handler) GetAll() ([]*model.Member, error) {
-	selectSQL := "SELECT id, email, created_on FROM member"
-
-	stmt, err := h.conn.Prepare(selectSQL)
+	stmt, err := h.conn.Prepare(sqlGetAll)
 	if err != nil {
 		return nil, err
 	}
@@ -71,12 +80,7 @@ func (h *Handler) GetAll() ([]*model.Member, error) {
 
 // GetByID fetch a member by their ID
 func (h *Handler) GetByID(id string) (*model.Member, error) {
-	selectSQL := `
-	SELECT id, email, created_on
-	FROM member
-	WHERE id=$1`
-
-	stmt, err := h.conn.Prepare(selectSQL)
+	stmt, err := h.conn.Prepare(sqlGetMemberByID)
 	if err != nil {
 		return nil, err
 	}
@@ -97,12 +101,7 @@ func (h *Handler) GetByID(id string) (*model.Member, error) {
 
 // Login logs a member in
 func (h *Handler) Login(credentials *model.Login) (string, error) {
-	selectSQL := `
-	SELECT id, email, password
-	FROM member
-	WHERE email=$1`
-
-	stmt, err := h.conn.Prepare(selectSQL)
+	stmt, err := h.conn.Prepare(sqlLogin)
 	if err != nil {
 		return "", err
 	}
